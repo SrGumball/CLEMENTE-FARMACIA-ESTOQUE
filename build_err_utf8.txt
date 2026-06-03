@@ -1,0 +1,108 @@
+﻿node.exe : 
+[31mÔ£ù[39m Build 
+failed in 968ms
+No linha:1 caractere:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: ([31mÔ£ù[39m   
+  Build failed in 9    
+68ms:String) [], R    
+emoteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+[31merror during 
+build:
+[31m[vite:esbuild] 
+Transform failed with 
+1 error:
+C:/Users/CAIS 10/Downlo
+ads/FARMACIA-CLEMENTE--
+main/FARMACIA-CLEMENTE-
+-main/src/pages/Relator
+ios.jsx:108:5: ERROR: 
+Unexpected ")"[31m
+file: 
+[36mC:/Users/CAIS 10/D
+ownloads/FARMACIA-CLEME
+NTE--main/FARMACIA-CLEM
+ENTE--main/src/pages/Re
+latorios.jsx:108:5[31m
+[33m
+[33mUnexpected 
+")"[33m
+106|        return 
+data >= dataInicio && 
+data <= dataFim;
+107|      })
+108|      })
+   |       ^
+109|      .forEach(s 
+=> {
+110|        const ala 
+= s.ala_nome || 
+s.destino || "N├úo 
+especificado";
+[31m
+    at 
+failureErrorWithLog 
+(C:\Users\CAIS 10\Downl
+oads\FARMACIA-CLEMENTE-
+-main\FARMACIA-CLEMENTE
+--main\node_modules\esb
+uild\lib\main.js:1467:1
+5)
+    at C:\Users\CAIS 10
+\Downloads\FARMACIA-CLE
+MENTE--main\FARMACIA-CL
+EMENTE--main\node_modul
+es\esbuild\lib\main.js:
+736:50
+    at responseCallback
+s.<computed> 
+(C:\Users\CAIS 10\Downl
+oads\FARMACIA-CLEMENTE-
+-main\FARMACIA-CLEMENTE
+--main\node_modules\esb
+uild\lib\main.js:603:9)
+    at 
+handleIncomingPacket 
+(C:\Users\CAIS 10\Downl
+oads\FARMACIA-CLEMENTE-
+-main\FARMACIA-CLEMENTE
+--main\node_modules\esb
+uild\lib\main.js:658:12
+)
+    at 
+Socket.readFromStdout 
+(C:\Users\CAIS 10\Downl
+oads\FARMACIA-CLEMENTE-
+-main\FARMACIA-CLEMENTE
+--main\node_modules\esb
+uild\lib\main.js:581:7)
+    at Socket.emit 
+(node:events:508:28)
+    at addChunk (node:i
+nternal/streams/readabl
+e:559:12)
+    at readableAddChunk
+PushByteMode (node:inte
+rnal/streams/readable:5
+10:3)
+    at Readable.push (n
+ode:internal/streams/re
+adable:390:5)
+    at 
+Pipe.onStreamRead (node
+:internal/stream_base_c
+ommons:189:23)[39m
