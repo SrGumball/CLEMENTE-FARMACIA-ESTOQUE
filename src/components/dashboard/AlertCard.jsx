@@ -30,7 +30,19 @@ export default function AlertCard({ type, items = [] }) {
     const config = alertConfig[type] || alertConfig.estoque_baixo;
     const Icon = config.icon;
 
-    if (items.length === 0) return null;
+    if (items.length === 0) {
+  return (
+    <Card className={`p-4 border ${config.border} ${config.bg} shadow-sm`}>
+      <div className="flex items-center gap-2 mb-3">
+        <Icon className={`w-5 h-5 ${config.color}`} />
+        <h3 className={`font-semibold text-sm ${config.color}`}>{config.title}</h3>
+        <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ${config.bg} ${config.color}`}>0</span>
+      </div>
+      <p className="text-sm text-slate-600">Nenhum item encontrado.</p>
+    </Card>
+  );
+}
+
 
     const getDaysColor = (days) => {
         if (days < 0) return "text-red-700 bg-red-100";
