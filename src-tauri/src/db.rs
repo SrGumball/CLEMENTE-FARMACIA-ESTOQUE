@@ -464,15 +464,46 @@ pub async fn import_backup(
     // Lock the state to ensure no other operations are happening
     let mut conn_guard = state.0.lock().unwrap();
     
-    // Explicitly dropping the connection before file operations might be safer in some OS, 
-    // but rusqlite's Connection drop usually handles it. 
-    // However, we are replacing it anyway.
-    
-    // Delete current DB to be sure (or just copy over)
+    // Copy backup over current database
     std::fs::copy(&backup_path, &db_path).map_err(|e| e.to_string())?;
     
-    // Reopen connection
-    let new_conn = Connection::open(db_path).map_err(|e| e.to_string())?;
+    // Reopen connection to the restored database
+    let new_conn = Connection::open(&db_path).map_err(|e| e.to_string())?;
+
+    // Run migrations on the restored database (creates tables if missing)
+    let migration_sql = include_str!("../migrations.sql");
+    new_conn.execute_batch(migration_sql).map_err(|e| e.to_string())?;
+
+    // Add any missing columns (for backups created with older versions)
+    let tables_to_check = vec![
+        ("Medicamento", "codigo", "TEXT"),
+        ("Medicamento", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP"),
+        ("Lote", "medicamento_nome", "TEXT"),
+        ("Lote", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP"),
+        ("Entrada", "medicamento_nome", "TEXT"),
+        ("Entrada", "fornecedor_nome", "TEXT"),
+        ("Entrada", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP"),
+        ("Saida", "medicamento_nome", "TEXT"),
+        ("Saida", "ala_nome", "TEXT"),
+        ("Saida", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP"),
+    ];
+
+    for (table, column, col_type) in tables_to_check {
+        let check_query = format!("SELECT 1 FROM pragma_table_info('{}') WHERE name = '{}'", table, column);
+        let has_column = new_conn.prepare(&check_query)
+            .map_err(|e| format!("Error checking column {} in {}: {}", column, table, e))?
+            .exists([])
+            .map_err(|e| format!("Error checking existence of {} in {}: {}", column, table, e))?;
+
+        if !has_column {
+            let alter_query = format!("ALTER TABLE {} ADD COLUMN {} {}", table, column, col_type);
+            new_conn.execute(&alter_query, [])
+                .map_err(|e| format!("Error adding column {} to {}: {}", column, table, e))?;
+            println!("Added missing column {} to table {}", column, table);
+        }
+    }
+
+    // Swap the connection
     *conn_guard = new_conn;
 
     Ok(())
