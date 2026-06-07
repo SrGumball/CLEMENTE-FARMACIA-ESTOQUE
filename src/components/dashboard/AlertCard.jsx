@@ -47,10 +47,10 @@ function AlertModal({ type, items, onClose }) {
     const Icon = config.icon;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="print-modal-wrapper fixed inset-0 z-50 flex items-center justify-center p-4">
             {/* Overlay */}
             <div
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                className="print-overlay absolute inset-0 bg-black/50 backdrop-blur-sm"
                 onClick={onClose}
             />
 
@@ -85,7 +85,7 @@ function AlertModal({ type, items, onClose }) {
                 </div>
 
                 {/* Body */}
-                <div className="overflow-y-auto flex-1">
+                <div className="print-scroll-area overflow-y-auto flex-1">
                     {type === "estoque_baixo" ? (
                         <table className="w-full">
                             <thead className="sticky top-0 bg-slate-50 border-b border-slate-200">
@@ -128,6 +128,9 @@ function AlertModal({ type, items, onClose }) {
                                     <th className="text-center py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                                         <div className="flex items-center justify-center gap-1"><Calendar className="w-3 h-3" /> Validade</div>
                                     </th>
+                                    <th className="text-center py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                        <div className="flex items-center justify-center gap-1"><Package className="w-3 h-3" /> Qtd.</div>
+                                    </th>
                                     <th className="text-center py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Dias</th>
                                 </tr>
                             </thead>
@@ -155,6 +158,9 @@ function AlertModal({ type, items, onClose }) {
                                                     {validadeDate && isValid(validadeDate)
                                                         ? format(validadeDate, "dd/MM/yyyy", { locale: ptBR })
                                                         : "—"}
+                                                </td>
+                                                <td className="py-3 px-4 text-center text-sm font-bold text-slate-800">
+                                                    {item.qtd !== undefined ? item.qtd : "—"}
                                                 </td>
                                                 <td className="py-3 px-4 text-center">
                                                     {daysLeft !== null && (
@@ -270,22 +276,50 @@ export default function AlertCard({ type, items = [] }) {
             )}
             <style>{`
                 @media print {
+                    body {
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        background: white !important;
+                    }
                     body * {
                         visibility: hidden;
                     }
-                    .print-modal-content, .print-modal-content * {
+                    .print-modal-wrapper, .print-modal-wrapper * {
                         visibility: visible;
                     }
-                    .print-modal-content {
+                    
+                    /* O segredo para não remontar linha é transformar TUDO que for pai da tabela em display: block e remover position fixo/absoluto onde não deve */
+                    .print-modal-wrapper {
                         position: absolute !important;
                         left: 0 !important;
                         top: 0 !important;
+                        display: block !important; 
                         width: 100% !important;
+                        height: auto !important;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                    }
+                    .print-overlay {
+                        display: none !important;
+                    }
+                    .print-modal-content {
+                        position: relative !important;
+                        display: block !important;
+                        width: 100% !important;
+                        height: auto !important;
                         max-height: none !important;
+                        overflow: visible !important;
+                        transform: none !important;
                         box-shadow: none !important;
                         border-radius: 0 !important;
-                        overflow: visible !important;
                     }
+                    .print-scroll-area {
+                        overflow: visible !important;
+                        display: block !important;
+                        height: auto !important;
+                        flex: none !important;
+                    }
+
                     .no-print {
                         display: none !important;
                     }
@@ -293,8 +327,24 @@ export default function AlertCard({ type, items = [] }) {
                         -webkit-print-color-adjust: exact;
                         color-adjust: exact;
                     }
-                    table { border-collapse: collapse; width: 100%; }
-                    th, td { border: 1px solid #ddd; }
+                    
+                    /* Configurações específicas de tabela para quebrar página certo */
+                    table { 
+                        border-collapse: collapse !important; 
+                        width: 100% !important; 
+                        page-break-inside: auto !important; 
+                    }
+                    tr { 
+                        page-break-inside: avoid !important; 
+                        page-break-after: auto !important; 
+                    }
+                    thead { 
+                        display: table-header-group !important; 
+                    }
+                    th, td { 
+                        border: 1px solid #ddd !important; 
+                        padding: 8px !important; 
+                    }
                 }
             `}</style>
         </>

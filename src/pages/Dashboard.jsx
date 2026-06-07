@@ -67,6 +67,7 @@ export default function Dashboard() {
       nome: l.medicamento_nome,
       lote: l.numero_lote,
       validade: l.data_validade,
+      qtd: l.quantidade_atual || 0,
       diasRestantes: differenceInDays(parseISO(l.data_validade), hoje),
     }));
 
@@ -83,6 +84,7 @@ export default function Dashboard() {
       nome: l.medicamento_nome,
       lote: l.numero_lote,
       validade: l.data_validade,
+      qtd: l.quantidade_atual || 0,
     }));
 
   // Dados para gráfico de movimentação (últimos 6 meses)
