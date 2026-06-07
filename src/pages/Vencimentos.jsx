@@ -1,12 +1,16 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { db } from "@/api/db";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { differenceInDays, parseISO, isValid, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import {
   CalendarX2,
   Search,
@@ -15,8 +19,12 @@ import {
   CheckCircle2,
   XCircle,
   Filter,
+  Printer,
+  Download,
+  Trash2,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 // ─── Paleta de cores por categoria ───────────────────────────────────────────
 const CATEGORIA_COLORS = [
@@ -150,9 +158,12 @@ function UrgencyBar({ dias }) {
 }
 
 export default function Vencimentos() {
+  const printRef = useRef();
+  const queryClient = useQueryClient();
   const [abaAtiva, setAbaAtiva] = useState("vencidos");
   const [search, setSearch] = useState("");
   const [filterCategoria, setFilterCategoria] = useState("all");
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const hoje = new Date();
 
@@ -231,6 +242,77 @@ export default function Vencimentos() {
       });
   }, [lotesEnriquecidos, tabAtual, search, filterCategoria]);
 
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      toast.loading("Gerando PDF...");
+      const element = printRef.current;
+      const canvas = await html2canvas(element, { scale: 2 });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`vencimentos-${format(hoje, "dd-MM-yyyy")}.pdf`);
+      toast.dismiss();
+      toast.success("PDF exportado com sucesso!");
+    } catch (error) {
+      console.error(error);
+      toast.dismiss();
+      toast.error("Erro ao gerar PDF");
+    }
+  };
+
+  const limparVencidosMutation = useMutation({
+    mutationFn: async () => {
+      const lotesVencidos = lotesEnriquecidos.filter(l => l.dias < 0 && (l.quantidade_atual || 0) > 0);
+      
+      for (const lote of lotesVencidos) {
+        const quantidadeARemover = lote.quantidade_atual;
+        
+        // 1. Criar Saída
+        await db.entities.Saida.create({
+          medicamento_id: lote.medicamento_id,
+          medicamento_nome: lote.medicamento_nome_display,
+          numero_lote: lote.numero_lote,
+          quantidade: quantidadeARemover,
+          data_saida: new Date().toISOString(),
+          ala_id: null,
+          ala_nome: "Descarte (Vencimento)",
+          observacao: "Saída automática por vencimento do estoque",
+          lote_id: lote.id
+        });
+
+        // 2. Zerar Lote
+        await db.entities.Lote.update(lote.id, {
+          quantidade_atual: 0,
+          status: "esgotado",
+        });
+
+        // 3. Atualizar Estoque do Medicamento
+        const med = medicamentos.find(m => m.id === lote.medicamento_id);
+        if (med) {
+          await db.entities.Medicamento.update(med.id, {
+            estoque_atual: Math.max(0, (med.estoque_atual || 0) - quantidadeARemover),
+          });
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['medicamentos'] });
+      queryClient.invalidateQueries({ queryKey: ['lotes'] });
+      queryClient.invalidateQueries({ queryKey: ['saidas'] });
+      setConfirmOpen(false);
+      toast.success("Medicamentos vencidos removidos do estoque com sucesso!");
+    },
+    onError: (error) => {
+      toast.error("Erro ao limpar vencidos: " + error.message);
+    }
+  });
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -245,6 +327,16 @@ export default function Vencimentos() {
               <p className="text-slate-500 text-sm">Medicamentos vencidos ou com vencimento nos próximos 120 dias</p>
             </div>
           </div>
+        </div>
+        <div className="flex gap-2 no-print">
+          <Button onClick={handlePrint} variant="outline" className="gap-2 bg-white">
+            <Printer className="w-4 h-4" />
+            Imprimir
+          </Button>
+          <Button onClick={handleExportPDF} className="gap-2 bg-red-600 hover:bg-red-700 text-white border-0">
+            <Download className="w-4 h-4" />
+            Exportar PDF
+          </Button>
         </div>
       </div>
 
@@ -335,9 +427,10 @@ export default function Vencimentos() {
         </div>
       </Card>
 
-      {/* Tabela principal */}
-      <Card className="border-0 shadow-sm overflow-hidden">
-        {/* Cabeçalho da aba ativa */}
+      <div ref={printRef} className="print-only-container">
+        {/* Tabela principal */}
+        <Card className="border-0 shadow-sm overflow-hidden">
+          {/* Cabeçalho da aba ativa */}
         {tabAtual && (
           <div className={`px-6 py-4 ${tabAtual.cardBg} border-b ${tabAtual.cardBorder} flex items-center justify-between`}>
             <div className="flex items-center gap-2">
@@ -350,9 +443,22 @@ export default function Vencimentos() {
                 {tabAtual.key === "120dias" && " — Vigilância preventiva"}
               </h2>
             </div>
-            <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${tabAtual.badgeCls}`}>
-              {itensFiltrados.length} {itensFiltrados.length === 1 ? "item" : "itens"}
-            </span>
+            <div className="flex items-center gap-3">
+              {tabAtual.key === "vencidos" && itensFiltrados.length > 0 && (
+                <Button 
+                  onClick={() => setConfirmOpen(true)} 
+                  size="sm" 
+                  className="bg-red-600 hover:bg-red-700 text-white gap-2 shadow-sm font-semibold"
+                  disabled={limparVencidosMutation.isPending}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Limpar Vencidos e Tirar do Estoque
+                </Button>
+              )}
+              <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${tabAtual.badgeCls}`}>
+                {itensFiltrados.length} {itensFiltrados.length === 1 ? "item" : "itens"}
+              </span>
+            </div>
           </div>
         )}
 
@@ -434,6 +540,56 @@ export default function Vencimentos() {
           </div>
         )}
       </Card>
+      </div>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-600 flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5" /> Confirmar remoção de vencidos
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Você está prestes a remover <strong>todos</strong> os itens vencidos do estoque atual.
+              <br/><br/>
+              Isso irá zerar a quantidade de <strong>{lotesEnriquecidos.filter(l => l.dias < 0 && (l.quantidade_atual || 0) > 0).length} lotes</strong> que constam como vencidos e gerará automaticamente registros de <strong>Saída por Descarte</strong> para todos eles.
+              <br/><br/>
+              Essa ação não poderá ser desfeita facilmente. Deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={limparVencidosMutation.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={(e) => {
+                e.preventDefault();
+                limparVencidosMutation.mutate();
+              }} 
+              disabled={limparVencidosMutation.isPending}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {limparVencidosMutation.isPending ? "Processando..." : "Sim, Limpar e Remover"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <style jsx global>{`
+        @media print {
+          @page {
+            size: A4;
+            margin: 10mm;
+          }
+          body { 
+            print-color-adjust: exact; 
+            -webkit-print-color-adjust: exact; 
+            background-color: white !important;
+          }
+          .no-print, nav, header, footer, aside, .lucide-search, input { display: none !important; }
+          .p-6 { padding: 0 !important; }
+          
+          table { width: 100% !important; border-collapse: collapse !important; }
+          th, td { border: 1px solid #e2e8f0 !important; }
+        }
+      `}</style>
     </div>
   );
 }

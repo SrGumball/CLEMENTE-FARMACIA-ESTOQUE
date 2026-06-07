@@ -1,7 +1,7 @@
 import { parseISO, isValid, differenceInDays, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Card } from "@/components/ui/card";
-import { AlertTriangle, Clock, XCircle, ChevronRight, X, Calendar, Package, Hash } from "lucide-react";
+import { AlertTriangle, Clock, XCircle, ChevronRight, X, Calendar, Package, Hash, Printer } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 
@@ -55,9 +55,9 @@ function AlertModal({ type, items, onClose }) {
             />
 
             {/* Modal */}
-            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="print-modal-content relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                 {/* Header */}
-                <div className={`${config.headerBg} text-white px-6 py-4 flex items-center justify-between flex-shrink-0`}>
+                <div className={`${config.headerBg} text-white px-6 py-4 flex items-center justify-between flex-shrink-0 no-print-bg`}>
                     <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
                             <Icon className="w-5 h-5 text-white" />
@@ -67,12 +67,21 @@ function AlertModal({ type, items, onClose }) {
                             <p className="text-white/70 text-xs">{items.length} {items.length === 1 ? "item encontrado" : "itens encontrados"}</p>
                         </div>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
-                    >
-                        <X className="w-4 h-4 text-white" />
-                    </button>
+                    <div className="flex gap-2 no-print">
+                        <button
+                            onClick={() => window.print()}
+                            className="h-8 px-3 rounded bg-white/20 hover:bg-white/30 flex items-center gap-2 text-xs font-semibold transition-colors text-white"
+                        >
+                            <Printer className="w-3.5 h-3.5" />
+                            Imprimir
+                        </button>
+                        <button
+                            onClick={onClose}
+                            className="w-8 h-8 rounded bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                        >
+                            <X className="w-4 h-4 text-white" />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Body */}
@@ -259,6 +268,35 @@ export default function AlertCard({ type, items = [] }) {
                     onClose={() => setModalAberto(false)}
                 />
             )}
+            <style>{`
+                @media print {
+                    body * {
+                        visibility: hidden;
+                    }
+                    .print-modal-content, .print-modal-content * {
+                        visibility: visible;
+                    }
+                    .print-modal-content {
+                        position: absolute !important;
+                        left: 0 !important;
+                        top: 0 !important;
+                        width: 100% !important;
+                        max-height: none !important;
+                        box-shadow: none !important;
+                        border-radius: 0 !important;
+                        overflow: visible !important;
+                    }
+                    .no-print {
+                        display: none !important;
+                    }
+                    .no-print-bg {
+                        -webkit-print-color-adjust: exact;
+                        color-adjust: exact;
+                    }
+                    table { border-collapse: collapse; width: 100%; }
+                    th, td { border: 1px solid #ddd; }
+                }
+            `}</style>
         </>
     );
 }
