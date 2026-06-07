@@ -58,6 +58,7 @@ import Medicamentos from './pages/Medicamentos';
 import Inventario from './pages/Inventario';
 import Relatorios from './pages/Relatorios';
 import Saidas from './pages/Saidas';
+import Vencimentos from './pages/Vencimentos';
 import __Layout from './Layout.jsx';
 
 
@@ -73,6 +74,7 @@ export const PAGES = {
   "Medicamentos": Medicamentos,
   "Relatorios": Relatorios,
   "Saidas": Saidas,
+  "Vencimentos": Vencimentos,
 }
 
 export const pagesConfig = {

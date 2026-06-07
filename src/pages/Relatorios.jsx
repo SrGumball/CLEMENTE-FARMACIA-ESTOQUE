@@ -158,15 +158,14 @@ export default function Relatorios() {
       medicamentosPorAla[ala][nome].quantidade += (s.quantidade || 0);
     });
 
-  // Medicamentos próximos ao vencimento (30 dias)
-  const proximosVencimento = lotes
+  // Medicamentos vencidos com estoque > 0
+  const loteVencidosRelatorio = lotes
     .filter(l => {
-      if (l.status !== "disponivel" || l.quantidade_atual <= 0) return false;
+      if (l.quantidade_atual <= 0) return false;
       if (!l.data_validade) return false;
       const parsedDate = parseISO(l.data_validade);
       if (!isValid(parsedDate)) return false;
-      const diasParaVencer = differenceInDays(parsedDate, hoje);
-      return diasParaVencer > 0 && diasParaVencer <= 30;
+      return differenceInDays(parsedDate, hoje) < 0;
     })
     .map(l => {
       const medicamento = medicamentos.find(m => m.id === l.medicamento_id);
@@ -180,6 +179,35 @@ export default function Relatorios() {
       };
     })
     .sort((a, b) => a.dias - b.dias);
+
+  // Função auxiliar para filtrar por faixa de dias
+  const getLotesFaixa = (min, max) => lotes
+    .filter(l => {
+      if (l.quantidade_atual <= 0) return false;
+      if (!l.data_validade) return false;
+      const parsedDate = parseISO(l.data_validade);
+      if (!isValid(parsedDate)) return false;
+      const diasParaVencer = differenceInDays(parsedDate, hoje);
+      return diasParaVencer >= min && diasParaVencer <= max;
+    })
+    .map(l => {
+      const medicamento = medicamentos.find(m => m.id === l.medicamento_id);
+      return {
+        codigo: medicamento?.codigo || "S/C",
+        medicamento: l.medicamento_nome || medicamento?.nome || "N/A",
+        lote: l.numero_lote,
+        quantidade: l.quantidade_atual,
+        validade: l.data_validade,
+        dias: differenceInDays(parseISO(l.data_validade), hoje),
+      };
+    })
+    .sort((a, b) => a.dias - b.dias);
+
+  const vencimento30 = getLotesFaixa(1, 30);
+  const vencimento60 = getLotesFaixa(31, 60);
+  const vencimento120 = getLotesFaixa(61, 120);
+  // Manter compatibilidade com o nome antigo (usado em outras partes)
+  const proximosVencimento = vencimento30;
 
   // --- CÁLCULO MMC (Média Móvel de Consumo - últimos 4 meses fechados) ---
   const mesAtualInicio = startOfMonth(hoje);
@@ -681,45 +709,81 @@ export default function Relatorios() {
           </div>
         )}
 
-        {/* Alertas - Próximos ao Vencimento */}
+        {/* Alertas - Vencimentos por faixa */}
         {secoesVisiveis.vencimento && (
           <div className="mb-8">
-            <h2 className="text-xl font-bold text-slate-800 mb-4 pb-2 border-b border-slate-200 flex items-center gap-2">
+            <h2 className="text-xl font-bold text-slate-800 mb-2 pb-2 border-b border-slate-200 flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-amber-600" />
-              Medicamentos Próximos ao Vencimento (30 dias)
+              Controle de Vencimentos
             </h2>
-            {proximosVencimento.length > 0 ? (
-              <table className="w-full border-collapse border border-slate-300">
-                <thead>
-                  <tr className="bg-amber-600 text-white">
-                    <th className="text-left py-2 px-3 text-xs font-semibold border border-slate-300">Cód.</th>
-                    <th className="text-left py-2 px-3 text-xs font-semibold border border-slate-300">Medicamento</th>
-                    <th className="text-left py-2 px-3 text-xs font-semibold border border-slate-300">Lote</th>
-                    <th className="text-center py-2 px-3 text-xs font-semibold border border-slate-300">Quant.</th>
-                    <th className="text-center py-2 px-3 text-xs font-semibold border border-slate-300">Validade</th>
-                    <th className="text-center py-2 px-3 text-xs font-semibold border border-slate-300">Restante</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {proximosVencimento.map((item, idx) => (
-                    <tr key={idx} className={idx % 2 === 0 ? "bg-amber-50" : "bg-white"}>
-                      <td className="py-2 px-3 border border-slate-300 text-[10px] font-mono">{item.codigo}</td>
-                      <td className="py-2 px-3 border border-slate-300 font-medium text-sm">{item.medicamento}</td>
-                      <td className="py-2 px-3 border border-slate-300 text-sm">{item.lote}</td>
-                      <td className="py-2 px-3 border border-slate-300 text-center text-sm">{item.quantidade.toLocaleString('pt-BR')}</td>
-                      <td className="py-2 px-3 border border-slate-300 text-center text-sm">{format(parseISO(item.validade), "dd/MM/yyyy")}</td>
-                      <td className={`py-2 px-3 border border-slate-300 text-center font-bold text-sm ${item.dias <= 7 ? "text-red-700" : "text-amber-700"}`}>
-                        {item.dias} d
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <p className="text-slate-500 text-center py-4 bg-slate-50 rounded border border-slate-200">
-                Nenhum medicamento próximo ao vencimento
-              </p>
-            )}
+
+            {/* Resumo visual das faixas */}
+            <div className="grid grid-cols-4 gap-3 mb-6">
+              <div className="border-2 border-red-400 rounded-lg p-3 bg-red-50 text-center">
+                <p className="text-2xl font-black text-red-700">{loteVencidosRelatorio.length}</p>
+                <p className="text-xs font-semibold text-red-600 uppercase tracking-wide">Vencidos</p>
+                <p className="text-[10px] text-red-400">com estoque ativo</p>
+              </div>
+              <div className="border-2 border-orange-400 rounded-lg p-3 bg-orange-50 text-center">
+                <p className="text-2xl font-black text-orange-700">{vencimento30.length}</p>
+                <p className="text-xs font-semibold text-orange-600 uppercase tracking-wide">Até 30 dias</p>
+                <p className="text-[10px] text-orange-400">vencimento crítico</p>
+              </div>
+              <div className="border-2 border-yellow-400 rounded-lg p-3 bg-yellow-50 text-center">
+                <p className="text-2xl font-black text-yellow-700">{vencimento60.length}</p>
+                <p className="text-xs font-semibold text-yellow-600 uppercase tracking-wide">31–60 dias</p>
+                <p className="text-[10px] text-yellow-400">atenção moderada</p>
+              </div>
+              <div className="border-2 border-amber-400 rounded-lg p-3 bg-amber-50 text-center">
+                <p className="text-2xl font-black text-amber-700">{vencimento120.length}</p>
+                <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide">61–120 dias</p>
+                <p className="text-[10px] text-amber-400">vigilância preventiva</p>
+              </div>
+            </div>
+
+            {/* Tabela auxiliar para renderização das 4 faixas */}
+            {[
+              { label: "🔴 Medicamentos VENCIDOS (com estoque ativo)", items: loteVencidosRelatorio, headerCls: "bg-red-700", rowCls: "bg-red-50", diasCls: "text-red-900 font-black", diasLabel: (d) => `${Math.abs(d)}d atrás` },
+              { label: "🟠 Próximos ao Vencimento — Até 30 dias (CRÍTICO)", items: vencimento30, headerCls: "bg-orange-600", rowCls: "bg-orange-50", diasCls: "text-orange-800 font-bold", diasLabel: (d) => `${d}d` },
+              { label: "🟡 Próximos ao Vencimento — 31 a 60 dias", items: vencimento60, headerCls: "bg-yellow-500", rowCls: "bg-yellow-50", diasCls: "text-yellow-800 font-bold", diasLabel: (d) => `${d}d` },
+              { label: "🟢 Atenção Preventiva — 61 a 120 dias", items: vencimento120, headerCls: "bg-amber-500", rowCls: "bg-amber-50", diasCls: "text-amber-800 font-semibold", diasLabel: (d) => `${d}d` },
+            ].map(({ label, items, headerCls, rowCls, diasCls, diasLabel }) => (
+              <div key={label} className="mb-5">
+                <h3 className="text-sm font-bold text-slate-700 mb-2">{label}</h3>
+                {items.length > 0 ? (
+                  <table className="w-full border-collapse border border-slate-300">
+                    <thead>
+                      <tr className={`${headerCls} text-white`}>
+                        <th className="text-left py-2 px-3 text-xs font-semibold border border-slate-300">Cód.</th>
+                        <th className="text-left py-2 px-3 text-xs font-semibold border border-slate-300">Medicamento</th>
+                        <th className="text-left py-2 px-3 text-xs font-semibold border border-slate-300">Lote</th>
+                        <th className="text-center py-2 px-3 text-xs font-semibold border border-slate-300">Quant.</th>
+                        <th className="text-center py-2 px-3 text-xs font-semibold border border-slate-300">Validade</th>
+                        <th className="text-center py-2 px-3 text-xs font-semibold border border-slate-300">Restante</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {items.map((item, idx) => (
+                        <tr key={idx} className={idx % 2 === 0 ? rowCls : "bg-white"}>
+                          <td className="py-2 px-3 border border-slate-300 text-[10px] font-mono">{item.codigo}</td>
+                          <td className="py-2 px-3 border border-slate-300 font-medium text-sm">{item.medicamento}</td>
+                          <td className="py-2 px-3 border border-slate-300 text-sm">{item.lote}</td>
+                          <td className="py-2 px-3 border border-slate-300 text-center text-sm">{item.quantidade.toLocaleString('pt-BR')}</td>
+                          <td className="py-2 px-3 border border-slate-300 text-center text-sm">{format(parseISO(item.validade), "dd/MM/yyyy")}</td>
+                          <td className={`py-2 px-3 border border-slate-300 text-center text-sm ${diasCls}`}>
+                            {diasLabel(item.dias)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p className="text-slate-400 text-center py-3 bg-slate-50 rounded border border-slate-200 text-sm italic">
+                    Nenhum medicamento nesta faixa
+                  </p>
+                )}
+              </div>
+            ))}
           </div>
         )}
 

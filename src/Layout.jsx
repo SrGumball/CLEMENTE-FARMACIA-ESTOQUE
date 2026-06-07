@@ -21,7 +21,8 @@ import {
   Moon,
   Sun,
   ClipboardCheck,
-  Settings
+  Settings,
+  CalendarX2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,7 @@ const menuItems = [
   { name: "Saídas", icon: PackageMinus, page: "Saidas" },
   { name: "Empréstimos", icon: HandHelping, page: "Emprestimos" },
   { name: "Estoque", icon: Boxes, page: "Estoque" },
+  { name: "Vencimentos", icon: CalendarX2, page: "Vencimentos" },
   { name: "Alas", icon: Hospital, page: "Alas" },
   { name: "Fornecedores", icon: Building2, page: "Fornecedores" },
   { name: "Balanço", icon: ClipboardCheck, page: "Inventario" },
