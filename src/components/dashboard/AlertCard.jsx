@@ -1,6 +1,6 @@
 import { parseISO, isValid, differenceInDays } from "date-fns";
 import { Card } from "@/components/ui/card";
-import { AlertTriangle, Clock, XCircle, AlertOctagon } from "lucide-react";
+import { AlertTriangle, Clock, XCircle } from "lucide-react";
 
 const alertConfig = {
     vencidos: {
@@ -30,26 +30,25 @@ export default function AlertCard({ type, items = [] }) {
     const config = alertConfig[type] || alertConfig.estoque_baixo;
     const Icon = config.icon;
 
-    if (items.length === 0) {
-  return (
-    <Card className={`p-4 border ${config.border} ${config.bg} shadow-sm`}>
-      <div className="flex items-center gap-2 mb-3">
-        <Icon className={`w-5 h-5 ${config.color}`} />
-        <h3 className={`font-semibold text-sm ${config.color}`}>{config.title}</h3>
-        <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ${config.bg} ${config.color}`}>0</span>
-      </div>
-      <p className="text-sm text-slate-600">Nenhum item encontrado.</p>
-    </Card>
-  );
-}
-
-
     const getDaysColor = (days) => {
         if (days < 0) return "text-red-700 bg-red-100";
         if (days <= 30) return "text-red-600 bg-red-50 border border-red-200";
         if (days <= 60) return "text-orange-600 bg-orange-50 border border-orange-200";
         return "text-amber-600 bg-amber-50 border border-amber-200";
     };
+
+    if (items.length === 0) {
+        return (
+            <Card className={`p-4 border ${config.border} ${config.bg} shadow-sm`}>
+                <div className="flex items-center gap-2 mb-3">
+                    <Icon className={`w-5 h-5 ${config.color}`} />
+                    <h3 className={`font-semibold text-sm ${config.color}`}>{config.title}</h3>
+                    <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ${config.bg} ${config.color}`}>0</span>
+                </div>
+                <p className="text-sm text-slate-400">Nenhum item encontrado.</p>
+            </Card>
+        );
+    }
 
     return (
         <Card className={`p-4 border ${config.border} ${config.bg} shadow-sm`}>
