@@ -4,6 +4,19 @@
 
 @layer base {
   :root {
+    /* Dynamic Theme Scale (Default: Azul Oceano) */
+    --theme-50: #eff6ff;
+    --theme-100: #dbeafe;
+    --theme-200: #bfdbfe;
+    --theme-300: #93c5fd;
+    --theme-400: #60a5fa;
+    --theme-500: #3b82f6;
+    --theme-600: #2563eb;
+    --theme-700: #1d4ed8;
+    --theme-800: #1e40af;
+    --theme-900: #1e3a8a;
+    --theme-950: #172554;
+
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
@@ -37,6 +50,62 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .theme-verde {
+    --theme-50: #f0fdf4;
+    --theme-100: #dcfce7;
+    --theme-200: #bbf7d0;
+    --theme-300: #86efac;
+    --theme-400: #4ade80;
+    --theme-500: #22c55e;
+    --theme-600: #16a34a;
+    --theme-700: #15803d;
+    --theme-800: #166534;
+    --theme-900: #14532d;
+    --theme-950: #052e16;
+  }
+
+  .theme-roxo {
+    --theme-50: #faf5ff;
+    --theme-100: #f3e8ff;
+    --theme-200: #e9d5ff;
+    --theme-300: #d8b4fe;
+    --theme-400: #c084fc;
+    --theme-500: #a855f7;
+    --theme-600: #9333ea;
+    --theme-700: #7e22ce;
+    --theme-800: #6b21a8;
+    --theme-900: #581c87;
+    --theme-950: #3b0764;
+  }
+
+  .theme-ardosia {
+    --theme-50: #f8fafc;
+    --theme-100: #f1f5f9;
+    --theme-200: #e2e8f0;
+    --theme-300: #cbd5e1;
+    --theme-400: #94a3b8;
+    --theme-500: #64748b;
+    --theme-600: #475569;
+    --theme-700: #334155;
+    --theme-800: #1e293b;
+    --theme-900: #0f172a;
+    --theme-950: #020617;
+  }
+
+  .theme-rosa {
+    --theme-50: #fdf2f8;
+    --theme-100: #fce7f3;
+    --theme-200: #fbcfe8;
+    --theme-300: #f9a8d4;
+    --theme-400: #f472b6;
+    --theme-500: #ec4899;
+    --theme-600: #db2777;
+    --theme-700: #be185d;
+    --theme-800: #9d174d;
+    --theme-900: #831843;
+    --theme-950: #500724;
   }
 
   .dark {

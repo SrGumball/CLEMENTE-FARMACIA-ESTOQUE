@@ -18,27 +18,49 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Moon, Sun, Trash2, Save, Upload, HardDrive, Settings, History, Calendar } from "lucide-react";
+import { Moon, Sun, Trash2, Save, Upload, HardDrive, Settings, History, Calendar, Leaf, Waves, Sparkles, Box, Flower2, CheckCircle2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function Configuracoes() {
     const queryClient = useQueryClient();
-    const [darkMode, setDarkMode] = useState(() => {
-        const saved = localStorage.getItem("pharma_dark_mode");
-        return saved ? JSON.parse(saved) : false;
+    const [currentTheme, setCurrentTheme] = useState(() => {
+        const saved = localStorage.getItem("pharma_theme");
+        if (saved) return saved;
+        const savedDark = localStorage.getItem("pharma_dark_mode");
+        if (savedDark === "true") return "dark";
+        return "azul";
     });
 
     useEffect(() => {
-        if (darkMode) {
+        const isDark = currentTheme === "dark";
+        if (isDark) {
             document.documentElement.classList.add("dark");
         } else {
             document.documentElement.classList.remove("dark");
         }
-        localStorage.setItem("pharma_dark_mode", JSON.stringify(darkMode));
-        // Trigger storage event so other components know about the change if they care
+        
+        // Remove classes antigas de tema
+        const themes = ["theme-verde", "theme-azul", "theme-roxo", "theme-ardosia", "theme-rosa"];
+        themes.forEach(t => document.documentElement.classList.remove(t));
+        
+        if (!isDark && currentTheme !== "azul") {
+            document.documentElement.classList.add(`theme-${currentTheme}`);
+        }
+
+        localStorage.setItem("pharma_theme", currentTheme);
+        localStorage.setItem("pharma_dark_mode", JSON.stringify(isDark));
         window.dispatchEvent(new Event("storage"));
-    }, [darkMode]);
+    }, [currentTheme]);
+
+    const themeOptions = [
+        { id: "verde", name: "Verde Suave", icon: Leaf, iconColor: "text-green-500", bgPreview: "bg-green-600", lightPreview: "bg-green-50" },
+        { id: "azul", name: "Azul Oceano", icon: Waves, iconColor: "text-[#3b82f6]", bgPreview: "bg-[#2563eb]", lightPreview: "bg-[#eff6ff]" },
+        { id: "roxo", name: "Roxo Elegante", icon: Sparkles, iconColor: "text-purple-500", bgPreview: "bg-purple-600", lightPreview: "bg-purple-50" },
+        { id: "ardosia", name: "Ardósia", icon: Box, iconColor: "text-slate-500", bgPreview: "bg-slate-600", lightPreview: "bg-slate-50" },
+        { id: "rosa", name: "Rosa", icon: Flower2, iconColor: "text-pink-500", bgPreview: "bg-pink-600", lightPreview: "bg-pink-50" },
+        { id: "dark", name: "Dark Mode", icon: Moon, iconColor: "text-indigo-400", bgPreview: "bg-slate-900", lightPreview: "bg-slate-800" },
+    ];
 
     const handleResetSystem = async () => {
         try {
@@ -134,29 +156,48 @@ export default function Configuracoes() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card>
+                <Card className="md:col-span-2">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            {darkMode ? <Moon className="w-5 h-5 text-indigo-500" /> : <Sun className="w-5 h-5 text-amber-500" />}
+                            <Sun className="w-5 h-5 text-amber-500" />
                             Aparência do Sistema
                         </CardTitle>
                         <CardDescription>
-                            Alterne entre o tema Claro e Escuro
+                            Personalize as cores e o tema do sistema
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="flex items-center justify-between p-4 border rounded-lg bg-slate-50 dark:bg-slate-800/50 dark:border-slate-700">
-                            <div>
-                                <p className="font-medium text-slate-800 dark:text-slate-200">Tema Atual: {darkMode ? "Escuro" : "Claro"}</p>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">Proteja seus olhos em ambientes com pouca luz.</p>
+                        <div className="mb-4">
+                            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Paleta de Cores</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {themeOptions.map((theme) => {
+                                    const isSelected = currentTheme === theme.id;
+                                    return (
+                                        <div 
+                                            key={theme.id}
+                                            onClick={() => setCurrentTheme(theme.id)}
+                                            className={`cursor-pointer rounded-xl overflow-hidden border-2 transition-all ${isSelected ? 'border-green-500 ring-4 ring-green-500/20' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'}`}
+                                        >
+                                            <div className="flex h-16">
+                                                <div className={`w-1/3 ${theme.bgPreview}`}></div>
+                                                <div className={`w-2/3 ${theme.lightPreview} flex flex-col justify-center px-4 gap-2 relative`}>
+                                                    <div className={`h-2 w-3/4 rounded-full ${theme.bgPreview}`}></div>
+                                                    <div className={`h-1.5 w-1/2 rounded-full ${theme.bgPreview} opacity-40`}></div>
+                                                    {isSelected && (
+                                                        <div className="absolute right-2 top-2 bg-white rounded-full shadow-sm">
+                                                            <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="bg-white dark:bg-slate-900 p-3 flex items-center gap-2">
+                                                <theme.icon className={`w-4 h-4 ${theme.iconColor}`} />
+                                                <span className="font-bold text-sm text-slate-800 dark:text-slate-100">{theme.name}</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
-                            <Button
-                                variant={darkMode ? "default" : "outline"}
-                                className={darkMode ? "bg-indigo-600 hover:bg-indigo-700" : ""}
-                                onClick={() => setDarkMode(!darkMode)}
-                            >
-                                {darkMode ? "Mudar para Claro" : "Mudar para Escuro"}
-                            </Button>
                         </div>
                     </CardContent>
                 </Card>
